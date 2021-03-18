@@ -1,6 +1,6 @@
 ;;; funcs.el --- Spacemacs Layouts Layer functions File -*- lexical-binding: t; -*-
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author: Sylvain Benner <sylvain.benner@gmail.com>
 ;; URL: https://github.com/syl20bnr/spacemacs
@@ -71,8 +71,9 @@ Cancels autosave on exiting perspectives mode."
     (persp-switch spacemacs--last-selected-layout)))
 
 (defun spacemacs-layouts/non-restricted-buffer-list-helm ()
+  "Show all buffers accross all layouts."
   (interactive)
-  (let ((ido-make-buffer-list-hook (remove #'persp-restrict-ido-buffers ido-make-buffer-list-hook)))
+  (let ((helm-buffer-list-reorder-fn #'helm-buffers-reorder-buffer-list))
     (helm-mini)))
 
 (defun spacemacs-layouts/non-restricted-buffer-list-ivy ()
@@ -128,7 +129,7 @@ Cancels autosave on exiting perspectives mode."
           (concat " "
                   (mapconcat (lambda (persp)
                                (spacemacs//layout-format-name
-                                persp (position persp persp-list)))
+                                persp (cl-position persp persp-list)))
                              persp-list " | "))))
     (concat
      formatted-persp-list
@@ -277,36 +278,36 @@ Available PROPS:
   One or several EXPRESSIONS that are going to be evaluated after
   we change into the perspective NAME."
   (declare (indent 1))
-  (let* ((name (if (symbolp name)
-                   (symbol-value name)
-                 name))
-         (func (spacemacs//custom-layout-func-name name))
-         (binding-prop (car (spacemacs/mplist-get-values props :binding)))
-         (binding (if (symbolp binding-prop)
-                      (symbol-value binding-prop)
-                    binding-prop))
-         (body (spacemacs/mplist-get-values props :body))
-         (already-defined? (cdr (assoc binding
-                                       spacemacs--custom-layout-alist))))
-    `(progn
-       (defun ,func ()
-         ,(format "Open custom perspective %s" name)
-         (interactive)
-         (let ((initialize (not (gethash ,name *persp-hash*))))
-           (persp-switch ,name)
-           (when initialize
-             (delete-other-windows)
-             ,@body)))
-       ;; Check for Clashes
-       (if ,already-defined?
-           (unless (equal ,already-defined? ,name)
-             (spacemacs-buffer/message "Replacing existing binding \"%s\" for %s with %s"
-                                       ,binding ,already-defined? ,name)
-             (setq spacemacs--custom-layout-alist
-                   (delete (assoc ,binding spacemacs--custom-layout-alist)
-                           spacemacs--custom-layout-alist))
-             (push '(,binding . ,name) spacemacs--custom-layout-alist))
-         (push '(,binding . ,name) spacemacs--custom-layout-alist)))))
+  (when-let* ((name (if (symbolp name)
+                        (and (boundp name) (symbol-value name))
+                      name))
+              (binding-prop (car (spacemacs/mplist-get-values props :binding)))
+              (binding (if (symbolp binding-prop)
+                           (and (boundp binding-prop) (symbol-value binding-prop))
+                         binding-prop)))
+    (let* ((func (spacemacs//custom-layout-func-name name))
+           (body (spacemacs/mplist-get-values props :body))
+           (already-defined? (cdr (assoc binding
+                                         spacemacs--custom-layout-alist))))
+      `(progn
+         (defun ,func ()
+           ,(format "Open custom perspective %s" name)
+           (interactive)
+           (let ((initialize (not (gethash ,name *persp-hash*))))
+             (persp-switch ,name)
+             (when initialize
+               (delete-other-windows)
+               ,@body)))
+         ;; Check for Clashes
+         (if ,already-defined?
+             (unless (equal ,already-defined? ,name)
+               (spacemacs-buffer/message "Replacing existing binding \"%s\" for %s with %s"
+                                         ,binding ,already-defined? ,name)
+               (setq spacemacs--custom-layout-alist
+                     (delete (assoc ,binding spacemacs--custom-layout-alist)
+                             spacemacs--custom-layout-alist))
+               (push '(,binding . ,name) spacemacs--custom-layout-alist))
+           (push '(,binding . ,name) spacemacs--custom-layout-alist))))))
 
 (defun spacemacs/select-custom-layout ()
   "Update the custom-perspectives transient-state and then activate it."
@@ -450,7 +451,6 @@ perspectives does."
    :sources
    `(,(spacemacs//helm-perspectives-source)
      ,(helm-build-dummy-source "Create new perspective"
-        :requires-pattern t
         :action
         '(("Create new perspective" .
            spacemacs//create-persp-with-home-buffer)
@@ -547,6 +547,21 @@ Run PROJECT-ACTION on project."
                   'spacemacs/helm-project-smart-do-search))))
    :buffer "*Helm Projectile Layouts*"))
 
+(defun spacemacs//make-helm-list-reorder-fn (fn)
+  "Take a function `helm-buffer-list-reorder-fn' and return a
+`helm-buffer-list-reorder-fn' function.
+This the return function will filter out buffers not in layout and then
+pass results to FN."
+  (lambda (visibles others)
+    (funcall fn
+             (seq-remove #'spacemacs//layout-not-contains-buffer-p visibles)
+             (seq-remove #'spacemacs//layout-not-contains-buffer-p others))))
+
+(defun spacemacs//persp-helm-setup ()
+  "Set new `helm-buffer-list-reorder-fn'.
+Compose it with a new one that will filter out a buffers on in current layout."
+  (let ((my-wrapper (spacemacs//make-helm-list-reorder-fn helm-buffer-list-reorder-fn)))
+    (setq helm-buffer-list-reorder-fn my-wrapper)))
 
 ;; Ivy integration
 (defun spacemacs//ivy-persp-switch-project-action (project)
@@ -815,7 +830,8 @@ containing the buffer."
       (dolist (window-config
                (append (persp-parameter 'gui-eyebrowse-window-configs persp)
                        (persp-parameter 'term-eyebrowse-window-configs persp)))
-        (eyebrowse--rename-window-config-buffers window-config old new)))))
+        (eyebrowse--rename-window-config-buffers window-config old new)))
+    new))
 
 
 ;; layout local variables
@@ -834,7 +850,7 @@ Accepts a list of VARIABLE, DEFAULT-VALUE pairs.
                                     (-map 'car
                                           spacemacs--layout-local-variables))))
     ;; save the current layout
-    (ht-set! spacemacs--layout-local-map
+    (spacemacs-ht-set! spacemacs--layout-local-map
              (spacemacs//current-layout-name)
              (--map (cons it (symbol-value it))
                     layout-local-vars))
@@ -842,6 +858,6 @@ Accepts a list of VARIABLE, DEFAULT-VALUE pairs.
     (--each layout-local-vars
       (set it (alist-get it spacemacs--layout-local-variables)))
     ;; override with the previously bound values for the new layout
-    (--when-let (ht-get spacemacs--layout-local-map persp-name)
+    (--when-let (spacemacs-ht-get spacemacs--layout-local-map persp-name)
       (-each it
         (-lambda ((var . val)) (set var val))))))

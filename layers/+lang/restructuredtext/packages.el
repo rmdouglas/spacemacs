@@ -1,6 +1,6 @@
 ;;; packages.el --- rest layer packages file for Spacemacs.
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author:  <wwguo@hiGDP>
 ;; URL: https://github.com/syl20bnr/spacemacs
@@ -62,4 +62,4 @@
   (add-hook 'rst-mode-hook 'spacemacs/load-yasnippet))
 
 (defun restructuredtext/post-init-smartparens ()
-  (add-hook 'rst-mode-hook 'smartparens-mode))
+  (add-hook 'rst-mode-hook #'spacemacs//activate-smartparens))

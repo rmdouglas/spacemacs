@@ -1,6 +1,6 @@
 ;;; space-doc.el --- Spacemacs org minor mode. -*- lexical-binding: t -*-
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author: Sylvain Benner <sylvain.benner@gmail.com>
 ;; URL: https://github.com/syl20bnr/spacemacs
@@ -30,7 +30,7 @@
 (require 'org-compat)
 
 (defgroup space-doc nil "Minor mode for viewing Spacemacs documentation files."
-  :group 'convenience)
+  :group 'spacemacs)
 
 ;; NOTE: Dont forget to update Spacemacs FAQ if you modify this list!
 (defcustom spacemacs-space-doc-modificators

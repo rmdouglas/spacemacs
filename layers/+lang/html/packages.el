@@ -1,6 +1,6 @@
 ;;; packages.el --- HTML Layer packages File for Spacemacs
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author: Sylvain Benner <sylvain.benner@gmail.com>
 ;; URL: https://github.com/syl20bnr/spacemacs
@@ -32,8 +32,8 @@
         tagedit
         web-mode
         yasnippet
-        web-beautify
-        ))
+        web-beautify))
+
 
 (defun html/post-init-add-node-modules-path ()
   (add-hook 'css-mode-hook #'add-node-modules-path)
@@ -100,10 +100,7 @@
                                                 web-mode-hook))
     :config
     (progn
-      (evil-define-key 'insert emmet-mode-keymap (kbd "TAB") 'spacemacs/emmet-expand)
-      (evil-define-key 'insert emmet-mode-keymap (kbd "<tab>") 'spacemacs/emmet-expand)
-      (evil-define-key 'hybrid emmet-mode-keymap (kbd "TAB") 'spacemacs/emmet-expand)
-      (evil-define-key 'hybrid emmet-mode-keymap (kbd "<tab>") 'spacemacs/emmet-expand)
+      (define-key emmet-mode-keymap (kbd "<C-return>") 'spacemacs/emmet-expand)
       (spacemacs|hide-lighter emmet-mode))))
 
 (defun html/post-init-evil-matchit ()
@@ -184,12 +181,9 @@
 
 (defun html/post-init-smartparens ()
   (spacemacs/add-to-hooks
-   (if dotspacemacs-smartparens-strict-mode
-       'smartparens-strict-mode
-     'smartparens-mode)
+   #'spacemacs//activate-smartparens
    '(css-mode-hook scss-mode-hook sass-mode-hook less-css-mode-hook))
-
-  (add-hook 'web-mode-hook 'spacemacs/toggle-smartparens-off))
+  (add-hook 'web-mode-hook #'spacemacs//deactivate-smartparens))
 
 (defun html/init-tagedit ()
   (use-package tagedit
@@ -227,9 +221,9 @@
         "rk" 'web-mode-element-kill
         "rr" 'web-mode-element-rename
         "rw" 'web-mode-element-wrap
-        "z" 'web-mode-fold-or-unfold
-        ;; TODO element close would be nice but broken with evil.
-        ))
+        "z" 'web-mode-fold-or-unfold))
+    ;; TODO element close would be nice but broken with evil.
+
     :mode
     (("\\.phtml\\'"      . web-mode)
      ("\\.tpl\\.php\\'"  . web-mode)
@@ -247,6 +241,7 @@
      ("\\.eco\\'"        . web-mode)
      ("\\.ejs\\'"        . web-mode)
      ("\\.svelte\\'"     . web-mode)
+     ("\\.ctp\\'"        . web-mode)
      ("\\.djhtml\\'"     . web-mode))))
 
 (defun html/post-init-yasnippet ()

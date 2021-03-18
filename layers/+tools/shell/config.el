@@ -1,6 +1,6 @@
 ;;; config.el --- shell configuration File for Spacemacs
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author: Sylvain Benner <sylvain.benner@gmail.com>
 ;; URL: https://github.com/syl20bnr/spacemacs
@@ -18,19 +18,20 @@
 (setq term-char-mode-point-at-process-mark nil)
 
 ;; Variables
-
 (defvar shell-default-shell (if (spacemacs/system-is-mswindows)
                                 'eshell
                               'ansi-term)
   "Default shell to use in Spacemacs. Possible values are `eshell' (default),
 `shell', `term', `ansi-term', `multi-term' and `vterm'.")
 
-(defvar shell-default-position 'bottom
+(spacemacs|defc shell-default-position 'bottom
   "Position of the shell. Possible values are `top', `bottom', `full',
-  `left' and `right'.")
+  `left' and `right'."
+  '(choice (const bottom) (const full) (const top)))
 
-(defvar shell-default-height 30
-  "Height in percents for the shell window.")
+(spacemacs|defc shell-default-height 30
+  "Height in percents for the shell window."
+  'integer)
 
 (defvar shell-default-width 30
   "Width in percents for the shell window.")
@@ -53,3 +54,6 @@
 (defvar close-window-with-terminal nil
   "If non-nil, the window is closed when the terminal is stopped.
   This is only applied to `term' and `ansi-term' modes.")
+
+(defvar spacemacs-vterm-history-file-location nil
+  "Bash history full file name.")

@@ -1,6 +1,6 @@
 ;;; packages.el --- vue layer packages file for Spacemacs. -*- lexical-binding: t -*-
 ;;
-;; Copyright (c) 2012-2019 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author: Thanh Vuong <thanhvg@gmail.com>
 ;; URL: https://github.com/thanhvg
@@ -48,9 +48,7 @@
   (add-to-list 'spacemacs--prettier-modes 'vue-mode))
 
 (defun vue/post-init-smartparens ()
-  (if dotspacemacs-smartparens-strict-mode
-      (add-hook 'vue-mode-hook #'smartparens-strict-mode)
-    (add-hook 'vue-mode-hook #'smartparens-mode)))
+  (add-hook 'vue-mode-hook #'spacemacs//activate-smartparens))
 
 (defun vue/post-init-yasnippet ()
   (add-hook 'vue-mode-hook #'spacemacs//vue-setup-yasnippet))
