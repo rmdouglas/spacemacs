@@ -51,7 +51,8 @@
                  (not (file-in-directory-p
                        (executable-find "find") "C:\\Windows")))
         (setq  projectile-indexing-method 'alien
-               projectile-generic-command "find . -type f"))
+;;               projectile-generic-command "find . -type f"))
+		projectile-generic-command "find . --type f --print0"))
       (setq projectile-sort-order 'recentf
             projectile-cache-file (concat spacemacs-cache-directory
                                           "projectile.cache")
